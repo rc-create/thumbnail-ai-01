@@ -1,0 +1,65 @@
+from flask import Flask, request, jsonify
+from PIL import Image
+from io import BytesIO
+import requests
+
+app = Flask(__name__)
+
+# Define the route for uploading images
+@app.route('/upload', methods=['POST'])
+def upload_image():
+    # Get the uploaded file
+    uploaded_file = request.files['file']
+
+    # Save the file to a designated location
+    file_path = '/path/to/save/image'
+    uploaded_file.save(file_path)
+
+    # Return a JSON response to the user
+    return jsonify({'message': 'File uploaded successfully!'})
+
+# Define the route for generating thumbnails
+@app.route('/generate-thumbnail', methods=['POST'])
+def generate_thumbnail():
+    # Get the uploaded file
+    uploaded_file = request.files['file']
+
+    # Convert the file to a PIL Image object
+    img = Image.open(BytesIO(uploaded_file.read()))
+
+    # Generate a thumbnail using the AI model from DreamBooth
+    thumbnail_url = 'https://dreambooth.github.io/generate_thumbnail'
+    thumbnail_params = {'image': img}
+    response = requests.post(thumbnail_url, json=thumbnail_params)
+    thumbnail = Image.open(BytesIO(response.content))
+
+    # Customize the thumbnail with filters, font, color, stickers, and icons
+    customized_thumbnail = customize_thumbnail(thumbnail)
+
+    # Return the customized thumbnail as a binary response
+    output = BytesIO()
+    customized_thumbnail.save(output, format='JPEG')
+    output.seek(0)
+    return output.read()
+
+def customize_thumbnail(thumbnail):
+    # Apply filters to the thumbnail
+    filtered_thumbnail = apply_filters(thumbnail)
+
+    # Add text to the thumbnail
+    font = get_font()
+    text_color = get_text_color()
+    text_position = get_text_position()
+    text = get_text()
+    thumbnail_with_text = add_text(filtered_thumbnail, text, font, text_color, text_position)
+
+    # Add stickers and icons to the thumbnail
+    stickers = get_stickers()
+    icons = get_icons()
+    final_thumbnail = add_stickers_and_icons(thumbnail_with_text, stickers, icons)
+
+    return final_thumbnail
+
+if __name__ == '__main__':
+    # Start the Flask server
+    app.run(debug=True)
